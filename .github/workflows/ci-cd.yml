@@ -167,7 +167,8 @@ jobs:
           NEW_IMAGE="${REGISTRY}/${LOWERCASE_IMAGE_NAME}:sha-${IMAGE_TAG}"
 
           # Replace the existing image reference in deployment.yaml
-          sed -i "s|image: ghcr.io/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
+          
+          sed -i "s|image: ghcr.io[^ ]*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
 
           # Verify the change
           echo "Updated deployment to use image: ${NEW_IMAGE}"
