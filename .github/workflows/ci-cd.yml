@@ -107,9 +107,11 @@ jobs:
         id: vars
         run: |
           IMAGE_TAG=$(echo "${GITHUB_SHA}" | cut -c1-7)
-          LOWERCASE_IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          # Use the built-in environment variable GITHUB_REPOSITORY
+          LOWERCASE_IMAGE_NAME=$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          echo "lowercase_image_name=$LOWERCASE_IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "LOWERCASE_IMAGE_NAME=$LOWERCASE_IMAGE_NAME" >> $GITHUB_ENV
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "::set-output name=lowercase_image_name::$LOWERCASE_IMAGE_NAME"
           echo "::set-output name=image_tag::$IMAGE_TAG"
 
@@ -177,7 +179,7 @@ jobs:
           # Define the correct image with SHA tag
           NEW_IMAGE="${REGISTRY}/${LOWERCASE_IMAGE_NAME}:sha-${IMAGE_TAG}"
 
-          # Replace only the image value, keeping structure intact
+          # Replace only the image value in deployment.yaml
           sed -i "s|image: ghcr.io/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
 
           # Verify the change
