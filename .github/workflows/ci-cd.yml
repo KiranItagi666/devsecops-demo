@@ -105,7 +105,7 @@ jobs:
       - name: Get Image Tag and Lowercase Repository Name
         id: vars
         run: |
-          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_ENV
           echo "LOWERCASE_IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Extract metadata for Docker
@@ -159,7 +159,7 @@ jobs:
       
       - name: Update Kubernetes deployment file
         env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}  
           LOWERCASE_IMAGE_NAME: ${{ env.LOWERCASE_IMAGE_NAME }}
           REGISTRY: ghcr.io
         run: |
@@ -172,8 +172,8 @@ jobs:
           # Define the correct image with SHA tag
           NEW_IMAGE="${REGISTRY}/${LOWERCASE_IMAGE_NAME}:sha-${IMAGE_TAG}"
 
-          # Use | as delimiter in sed to avoid issues with /
-          sed -i "s|image: ghcr.io[^ ]*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
+          # Replace only the image value, keeping structure intact
+          sed -i "s|image: ghcr.io/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
 
           # Verify the change
           echo "Updated deployment to use image: ${NEW_IMAGE}"
