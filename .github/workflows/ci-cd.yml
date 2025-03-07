@@ -4,10 +4,10 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-      - 'kubernetes/deployment.yaml'  # Ignore changes to prevent loops
+      - 'kubernetes/deployment.yaml'  # Ignore to prevent unnecessary loops
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # <-- Allows manual triggering
+  workflow_dispatch:  # Enables manual trigger
 
 jobs:
   test:
@@ -27,7 +27,7 @@ jobs:
         run: npm ci
       
       - name: Run tests
-        run: npm test || echo "No tests found, would add tests in a real project"
+        run: npm test || echo "No tests found, skipping..."
 
   lint:
     name: Static Code Analysis
@@ -102,7 +102,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.TOKEN }}
 
-      - name: Get Full Commit SHA and Lowercase Repo Name
+      - name: Get Image Tag and Lowercase Repository Name
         id: vars
         run: |
           echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
@@ -114,7 +114,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.LOWERCASE_IMAGE_NAME }}
           tags: |
-            ${{ env.IMAGE_TAG }}
+            sha-${{ env.IMAGE_TAG }}
             latest
 
       - name: Build and Push Docker Image
@@ -160,14 +160,19 @@ jobs:
       - name: Update Kubernetes deployment file
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          LOWERCASE_IMAGE_NAME: $(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          LOWERCASE_IMAGE_NAME: ${{ env.LOWERCASE_IMAGE_NAME }}
           REGISTRY: ghcr.io
         run: |
+          # Ensure IMAGE_TAG is not empty before executing sed
+          if [ -z "$IMAGE_TAG" ]; then
+            echo "Error: IMAGE_TAG is empty. Exiting..."
+            exit 1
+          fi
+
           # Define the correct image with SHA tag
           NEW_IMAGE="${REGISTRY}/${LOWERCASE_IMAGE_NAME}:sha-${IMAGE_TAG}"
 
-          # Replace the existing image reference in deployment.yaml
-          
+          # Use | as delimiter in sed to avoid issues with /
           sed -i "s|image: ghcr.io[^ ]*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
 
           # Verify the change
