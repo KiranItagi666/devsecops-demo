@@ -102,10 +102,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.TOKEN }}
 
-      - name: Get Short SHA and Lowercase Repo Name
+      - name: Get Full Commit SHA and Lowercase Repo Name
         id: vars
         run: |
-          echo "IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_ENV
+          echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
           echo "LOWERCASE_IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Extract metadata for Docker
@@ -163,8 +163,8 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           REGISTRY: ghcr.io
         run: |
-          # Define the new image with tag
-          NEW_IMAGE="${REGISTRY}/${GITHUB_REPOSITORY}:${IMAGE_TAG}"
+          # Define the new image with full commit SHA tag
+          NEW_IMAGE="${REGISTRY}/$(echo '${GITHUB_REPOSITORY}' | tr '[:upper:]' '[:lower:]'):${IMAGE_TAG}"
           
           # Update the deployment file directly
           sed -i "s|image: ${REGISTRY}/.*|image: ${NEW_IMAGE}|g" kubernetes/deployment.yaml
